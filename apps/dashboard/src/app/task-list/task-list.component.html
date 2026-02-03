@@ -1,0 +1,497 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-10 border-b bg-white shadow-sm">
+    <div class="mx-auto max-w-7xl px-4 py-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Task Manager</h1>
+          <p class="text-xs text-gray-500">
+            Signed in as <span class="font-semibold text-gray-700">{{ role }}</span>
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+            (click)="loadTasks()"
+          >
+            Refresh
+          </button>
+          <button
+            class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+            (click)="logout()"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-6 space-y-6">
+    <!-- Error / Loading -->
+    <div *ngIf="errorMsg" class="rounded-xl border border-red-200 bg-red-50 p-4">
+      <p class="font-medium text-red-800">Error</p>
+      <p class="text-sm text-red-600">{{ errorMsg }}</p>
+    </div>
+
+    <div *ngIf="loading" class="rounded-xl border border-gray-200 bg-white p-6 text-center">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+      <p class="mt-2 text-gray-600">Loading tasks…</p>
+    </div>
+
+    <!-- Create Task Card -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">Create New Task</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+        <div class="lg:col-span-3">
+          <input
+            [(ngModel)]="newTask.title"
+            (keyup.enter)="createTask()"
+            placeholder="Task title"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div class="lg:col-span-4">
+          <input
+            [(ngModel)]="newTask.description"
+            (keyup.enter)="createTask()"
+            placeholder="Description (optional)"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div class="lg:col-span-2">
+          <select
+            [(ngModel)]="newTask.category"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          >
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-2">
+          <select
+            [(ngModel)]="newTask.status"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          >
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-1">
+          <button
+            (click)="createTask()"
+            [disabled]="!newTask.title.trim()"
+            class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+        <div>
+          <h3 class="text-base font-semibold text-gray-900">Filter & Sort Tasks</h3>
+          <p class="text-sm text-gray-500 mt-1">Showing: {{ filteredTasks.length }} of {{ tasks.length }} tasks</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div>
+          <input
+            [(ngModel)]="search"
+            (ngModelChange)="onFiltersChanged()"
+            placeholder="Search tasks..."
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <select
+            [(ngModel)]="categoryFilter"
+            (ngModelChange)="onFiltersChanged()"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          >
+            <option value="all">All Categories</option>
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+          </select>
+        </div>
+
+        <div>
+          <select
+            [(ngModel)]="statusFilter"
+            (ngModelChange)="onFiltersChanged()"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          >
+            <option value="all">All Statuses</option>
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+
+        <div>
+          <select
+            [(ngModel)]="sortKey"
+            (ngModelChange)="onFiltersChanged()"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+          >
+            <option value="updatedAt">Recently Updated</option>
+            <option value="createdAt">Date Created</option>
+            <option value="title">Alphabetical</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Filters Badges -->
+      <div *ngIf="search || categoryFilter !== 'all' || statusFilter !== 'all'" class="mt-3 flex flex-wrap gap-2">
+        <div *ngIf="search" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+          Search: "{{ search }}"
+          <button (click)="search = ''; onFiltersChanged()" class="ml-1 text-blue-500 hover:text-blue-700">
+            ×
+          </button>
+        </div>
+        <div *ngIf="categoryFilter !== 'all'" class="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs">
+          Category: {{ categoryFilter }}
+          <button (click)="categoryFilter = 'all'; onFiltersChanged()" class="ml-1 text-purple-500 hover:text-purple-700">
+            ×
+          </button>
+        </div>
+        <div *ngIf="statusFilter !== 'all'" class="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded text-xs">
+          Status: {{ statusFilter }}
+          <button (click)="statusFilter = 'all'; onFiltersChanged()" class="ml-1 text-green-500 hover:text-green-700">
+            ×
+          </button>
+        </div>
+        <button
+          *ngIf="search || categoryFilter !== 'all' || statusFilter !== 'all'"
+          (click)="clearFilters()"
+          class="text-xs text-gray-600 hover:text-gray-900 px-2 py-1 hover:bg-gray-100 rounded"
+        >
+          Clear all
+        </button>
+      </div>
+    </div>
+
+    <!-- Board with Drag and Drop -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- To Do Column -->
+      <div *ngIf="statusFilter === 'all' || statusFilter === 'todo'" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="p-4 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h3 class="font-semibold text-gray-900">To Do</h3>
+              <span class="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {{ todoList.length }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          cdkDropList
+          id="todoList"
+          [cdkDropListData]="todoList"
+          [cdkDropListConnectedTo]="['inProgressList', 'doneList']"
+          (cdkDropListDropped)="drop($event, 'todo')"
+          class="p-4 space-y-3 min-h-[300px] bg-gray-50/50 transition-colors duration-200 dropzone"
+        >
+          <!-- ✅ Empty drop target -->
+          <div *ngIf="todoList.length === 0" class="empty-drop">
+            Drop tasks here
+          </div>
+
+          <!-- ✅ CDK placeholder while dragging -->
+          <div cdkDropListPlaceholder class="cdk-placeholder"></div>
+
+          <ng-container *ngFor="let task of todoList; let i = index">
+            <div
+              cdkDrag
+              [cdkDragDisabled]="role === 'viewer'"
+              class="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow transition-all duration-200 cursor-move drag-item"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-gray-900">{{ task.title }}</p>
+                  <p *ngIf="task.description" class="text-sm text-gray-600 mt-1 line-clamp-2">
+                    {{ task.description }}
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="openEdit(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    *ngIf="canDelete()"
+                    (click)="deleteTask(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-800': task.category === 'work',
+                    'bg-purple-100 text-purple-800': task.category === 'personal'
+                  }"
+                >
+                  {{ task.category }}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ task.updatedAt | date:'MMM d, h:mm a' }}
+                </span>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- In Progress Column -->
+      <div *ngIf="statusFilter === 'all' || statusFilter === 'in_progress'" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="p-4 border-b border-gray-200 bg-amber-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h3 class="font-semibold text-gray-900">In Progress</h3>
+              <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {{ inProgressList.length }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          cdkDropList
+          id="inProgressList"
+          [cdkDropListData]="inProgressList"
+          [cdkDropListConnectedTo]="['todoList', 'doneList']"
+          (cdkDropListDropped)="drop($event, 'in_progress')"
+          class="p-4 space-y-3 min-h-[300px] bg-amber-50/30 transition-colors duration-200 dropzone"
+        >
+          <!-- ✅ Empty drop target -->
+          <div *ngIf="inProgressList.length === 0" class="empty-drop">
+            Drop tasks here
+          </div>
+
+          <!-- ✅ CDK placeholder while dragging -->
+          <div cdkDropListPlaceholder class="cdk-placeholder"></div>
+
+          <ng-container *ngFor="let task of inProgressList; let i = index">
+            <div
+              cdkDrag
+              [cdkDragDisabled]="role === 'viewer'"
+              class="bg-white rounded-lg border border-amber-100 p-3 shadow-sm hover:shadow transition-all duration-200 cursor-move drag-item"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-gray-900">{{ task.title }}</p>
+                  <p *ngIf="task.description" class="text-sm text-gray-600 mt-1 line-clamp-2">
+                    {{ task.description }}
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="openEdit(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    *ngIf="canDelete()"
+                    (click)="deleteTask(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-amber-100">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-800': task.category === 'work',
+                    'bg-purple-100 text-purple-800': task.category === 'personal'
+                  }"
+                >
+                  {{ task.category }}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ task.updatedAt | date:'MMM d, h:mm a' }}
+                </span>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Done Column -->
+      <div *ngIf="statusFilter === 'all' || statusFilter === 'done'" class="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div class="p-4 border-b border-gray-200 bg-emerald-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <h3 class="font-semibold text-gray-900">Done</h3>
+              <span class="bg-emerald-100 text-emerald-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {{ doneList.length }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          cdkDropList
+          id="doneList"
+          [cdkDropListData]="doneList"
+          [cdkDropListConnectedTo]="['todoList', 'inProgressList']"
+          (cdkDropListDropped)="drop($event, 'done')"
+          class="p-4 space-y-3 min-h-[300px] bg-emerald-50/30 transition-colors duration-200 dropzone"
+        >
+          <!-- ✅ Empty drop target -->
+          <div *ngIf="doneList.length === 0" class="empty-drop">
+            Drop tasks here
+          </div>
+
+          <!-- ✅ CDK placeholder while dragging -->
+          <div cdkDropListPlaceholder class="cdk-placeholder"></div>
+
+          <ng-container *ngFor="let task of doneList; let i = index">
+            <div
+              cdkDrag
+              [cdkDragDisabled]="role === 'viewer'"
+              class="bg-white rounded-lg border border-emerald-100 p-3 shadow-sm hover:shadow transition-all duration-200 cursor-move drag-item"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                  <p class="font-medium text-gray-900">{{ task.title }}</p>
+                  <p *ngIf="task.description" class="text-sm text-gray-600 mt-1 line-clamp-2">
+                    {{ task.description }}
+                  </p>
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    (click)="openEdit(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-gray-700 hover:text-gray-900"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    *ngIf="canDelete()"
+                    (click)="deleteTask(task); $event.stopPropagation()"
+                    class="text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mt-3 pt-3 border-t border-emerald-100">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium"
+                  [ngClass]="{
+                    'bg-blue-100 text-blue-800': task.category === 'work',
+                    'bg-purple-100 text-purple-800': task.category === 'personal'
+                  }"
+                >
+                  {{ task.category }}
+                </span>
+                <span class="text-xs text-gray-500">
+                  {{ task.updatedAt | date:'MMM d, h:mm a' }}
+                </span>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div *ngIf="editing && editModel" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="w-full max-w-md rounded-xl bg-white">
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Edit Task</h3>
+            <button
+              (click)="closeEdit()"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4 space-y-3">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Title</label>
+            <input
+              [(ngModel)]="editModel.title"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label class="text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              [(ngModel)]="editModel.description"
+              rows="3"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-700">Category</label>
+              <select
+                [(ngModel)]="editModel.category"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-700">Status</label>
+              <select
+                [(ngModel)]="editModel.status"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              >
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-200">
+          <div class="flex justify-end gap-2">
+            <button
+              (click)="closeEdit()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              (click)="saveEdit()"
+              class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
