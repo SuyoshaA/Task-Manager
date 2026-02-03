@@ -12,8 +12,12 @@ import { User } from '@sacharya/data';
   imports: [
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: 'your-secret-key-change-in-production',
-      signOptions: { expiresIn: '1h' },
+      // ✅ Read from environment variable with fallback
+      secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      signOptions: { 
+        // ✅ Convert string to appropriate type
+        expiresIn: (process.env.JWT_EXPIRATION as any) || '1h' 
+      },
     }),
   ],
   controllers: [AuthController],
