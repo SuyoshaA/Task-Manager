@@ -137,7 +137,7 @@ This creates test users:
 ### 5️⃣ Run Backend API
 
 ```bash
-nx serve api
+npx nx serve api
 ```
 
 Backend runs at:
@@ -152,7 +152,7 @@ http://localhost:3000/api
 Open a new terminal:
 
 ```bash
-nx serve dashboard
+npx nx serve dashboard
 ```
 
 Frontend runs at:
@@ -221,3 +221,4 @@ GitHub: https://github.com/SuyoshaA
 ## 📜 License
 
 MIT License
+
