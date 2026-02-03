@@ -133,7 +133,18 @@ This creates test users:
 | viewer@example.com | viewer | password |
 
 ---
+## **Environment Setup**
 
+Create a `.env` file with:
+
+```env
+JWT_SECRET=task-management-assessment-secret-key-2024
+JWT_EXPIRATION=1h
+DATABASE_TYPE=sqlite
+DATABASE_NAME=database.sqlite
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:4200
 ### 5️⃣ Run Backend API
 
 ```bash
@@ -221,4 +232,5 @@ GitHub: https://github.com/SuyoshaA
 ## 📜 License
 
 MIT License
+
 
